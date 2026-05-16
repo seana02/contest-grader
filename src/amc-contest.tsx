@@ -1,18 +1,18 @@
 import { doc, Firestore, getDoc, onSnapshot, setDoc } from "firebase/firestore";
-import { createSignal, Index, onMount } from "solid-js";
+import { createEffect, createSignal, Index, onCleanup, onMount } from "solid-js";
 
 import styles from './App.module.css';
 import Timer from "./Timer";
 
+import { answers as answerKey } from './answers';
+
 interface AMCContestProps {
     db: Firestore
-    year: string // e.g. 2025
-    test: string // e.g. AMC 10A
 }
 
 export default function AMCContest(props: AMCContestProps) {
-    const [year, setYear] = createSignal(props.year);
-    const [test, setTest] = createSignal(props.test);
+    const [year, setYear] = createSignal('');
+    const [test, setTest] = createSignal('');
     const documentName = () => test().toLowerCase() + year();
     const docRef = () => doc(props.db, "sessions", documentName());
 
@@ -30,26 +30,18 @@ export default function AMCContest(props: AMCContestProps) {
     const [gradeMessage, setGradeMessage] = createSignal<string>('');
     const [gradeError, setGradeError] = createSignal<string>('');
 
-    const localAnswerKeys: Record<string, string[]> = {
-        amc12a2025: [
-            'B','D','A','C','E','B','D','A','C','E','B','D','A','C','E','B','D','A','C','E','B','D','A','C','E'
-        ]
-    };
-
     const fetchKey = async () => {
         try {
-            const keyDoc = await getDoc(doc(props.db, "answerKeys", documentName()));
-            if (keyDoc.exists()) {
-                return keyDoc.data()?.answers as string[] | null;
-            }
+            let y = answerKey[year()];
+            return y[test()];
         } catch (error) {
             console.error("Unable to fetch answer key:", error);
         }
-        return localAnswerKeys[documentName()] ?? null;
     };
 
-    onMount(() => {
-        onSnapshot(docRef(), snapshot => {
+    createEffect(() => {
+        const unsub = onSnapshot(docRef(), snapshot => {
+            console.log("Oh Hi");
             const newAnswers = snapshot.data()?.answers;
             setAnswers(newAnswers ? newAnswers : answers());
             const endtime = snapshot.data()?.endtime?.toDate?.();
@@ -57,6 +49,8 @@ export default function AMCContest(props: AMCContestProps) {
         }, error => {
             console.error("Permission denied.", error);
         });
+
+        onCleanup(unsub);
     });
 
     const gradeAnswers = async () => {
@@ -72,6 +66,7 @@ export default function AMCContest(props: AMCContestProps) {
         const results = answers().map((choice, index) => {
             const correct = key[index];
             if (!correct) return false;
+            if (correct === 'x') return true;
             if (choice === '') return null;
             return choice === correct;
         });
@@ -108,14 +103,14 @@ export default function AMCContest(props: AMCContestProps) {
                 </label>
                 <button class={styles.GradeButton} onClick={gradeAnswers}>Grade</button>
             </div>
-            {gradeMessage() && <div class={styles.GradeSummary}>{gradeMessage()}</div>}
+            {!gradeError() && <div class={styles.GradeSummary}>{gradeMessage() || "Score:"}</div>}
             {gradeError() && <div class={styles.GradeError}>{gradeError()}</div>}
             <div class={styles.Answers}>
                 <Index each={answers()}>
                     {(choice, index) => {
                         const result = gradingResults()[index];
                         return (
-                            <div class={styles.Cell} classList={{ [styles.Correct]: result === true, [styles.Incorrect]: result === false }}>
+                            <div class={styles.Cell} classList={{ [styles.Correct]: gradingResults()[index] === true, [styles.Incorrect]: gradingResults()[index] === false }}>
                                 {index + 1}
                                 <select
                                     class={styles.Select}
@@ -141,10 +136,18 @@ export default function AMCContest(props: AMCContestProps) {
             <div class={styles.ButtonGroup}>
                 <button onClick={() => {
                     setDoc(docRef(), { endtime: new Date(Date.now() + 75 * 60 * 1000) }, { merge: true });
+                    reset();
                     setTimerOn(true);
                 }}>Start</button>
-                <button onClick={() => setTimerOn(false)}>Reset</button>
+                    <button onClick={() => reset()}>Reset</button>
             </div>
         </div>
     );
+
+    function reset() {
+        setTimerOn(false);
+        setGradeMessage('');
+        setGradeError('');
+        setGradingResults(Array(25).fill(null));
+    }
 }

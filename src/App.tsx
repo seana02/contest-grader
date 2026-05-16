@@ -67,8 +67,6 @@ const App: Component = () => {
                 </header>
                 <AMCContest
                     db={getFirestore(app)}
-                    year={"2025"}
-                    test={"AMC12A"}
                 />
             </Show>
         </Show>
