@@ -30,7 +30,7 @@ export default function AMCContest(props: AMCContestProps) {
     const [gradeMessage, setGradeMessage] = createSignal<string>('');
     const [gradeError, setGradeError] = createSignal<string>('');
 
-    const fetchKey = async () => {
+    const fetchKey = () => {
         try {
             let y = answerKey[year()];
             return y[test()];
@@ -41,7 +41,6 @@ export default function AMCContest(props: AMCContestProps) {
 
     createEffect(() => {
         const unsub = onSnapshot(docRef(), snapshot => {
-            console.log("Oh Hi");
             const newAnswers = snapshot.data()?.answers;
             setAnswers(newAnswers ? newAnswers : answers());
             const endtime = snapshot.data()?.endtime?.toDate?.();
@@ -55,7 +54,7 @@ export default function AMCContest(props: AMCContestProps) {
 
     const gradeAnswers = async () => {
         setGradeError('');
-        const key = await fetchKey();
+        const key = fetchKey();
         if (!key || key.length === 0) {
             setGradeMessage('');
             setGradingResults(Array(25).fill(null));
@@ -85,21 +84,24 @@ export default function AMCContest(props: AMCContestProps) {
             <div class={styles.GradeControls}>
                 <label class={styles.GradeLabel}>
                     Year
-                    <input
+                    <select
                         class={styles.GradeInput}
                         value={year()}
-                        onInput={e => setYear(e.currentTarget.value)}
-                        placeholder="2025"
-                    />
+                        onChange={e => setYear(e.currentTarget.value)}
+                    >
+                        {Object.keys(answerKey).sort().reverse().map(k => (<option value={k}>{k}</option>))}
+                    </select>
                 </label>
                 <label class={styles.GradeLabel}>
                     Test
-                    <input
+                    <select
                         class={styles.GradeInput}
                         value={test()}
-                        onInput={e => setTest(e.currentTarget.value)}
-                        placeholder="AMC12A"
-                    />
+                        onChange={e => setTest(e.currentTarget.value)}
+                    >
+                        { year() === "" ? <></> : <option value={test()}>{"Select Test"}</option> }
+                        { year() === "" ? <option value={test()}>{"Select Year"}</option> : Object.keys(answerKey[year()]).map(k => (<option value={k}>{k}</option>)) }
+                    </select>
                 </label>
                 <button class={styles.GradeButton} onClick={gradeAnswers}>Grade</button>
             </div>
