@@ -43,8 +43,9 @@ export default function AMCContest(props: AMCContestProps) {
         const unsub = onSnapshot(docRef(), snapshot => {
             const newAnswers = snapshot.data()?.answers;
             setAnswers(newAnswers ? newAnswers : answers());
-            const endtime = snapshot.data()?.endtime?.toDate?.();
+            const endtime = snapshot.data()?.endtime?.toDate();
             setTimer(endtime ? endtime : timer());
+            setTimerOn(snapshot.data()?.timerOn);
         }, error => {
             console.error("Permission denied.", error);
         });
@@ -137,17 +138,15 @@ export default function AMCContest(props: AMCContestProps) {
             </div>
             <div class={styles.ButtonGroup}>
                 <button onClick={() => {
-                    setDoc(docRef(), { endtime: new Date(Date.now() + 75 * 60 * 1000) }, { merge: true });
+                    setDoc(docRef(), { endtime: new Date(Date.now() + 75 * 60 * 1000), timerOn: true }, { merge: true });
                     reset();
-                    setTimerOn(true);
                 }}>Start</button>
-                    <button onClick={() => reset()}>Reset</button>
+                    <button onClick={() => { reset(); setDoc(docRef(), { timerOn: false }, { merge: true }) }}>Reset</button>
             </div>
         </div>
     );
 
     function reset() {
-        setTimerOn(false);
         setGradeMessage('');
         setGradeError('');
         setGradingResults(Array(25).fill(null));
