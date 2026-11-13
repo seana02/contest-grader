@@ -149,4 +149,7 @@ export const answers: {[year: string]: {[test: string]: string[]}} = {
         "AMC12A": ["E", "B", "A", "B", "D", "B", "C", "E", "E", "B", "A", "B", "D", "D", "C", "D", "A", "C", "E", "C", "A", "E", "C", "C", "x"],
         "AMC12B": ["B", "D", "D", "A", "E", "C", "C", "C", "C", "A", "C", "C", "D", "B", "D", "B", "C", "D", "C", "E", "C", "C", "E", "D", "E"],
     },
+    "2026": {
+        "AMC12A": ["A", "D", "A", "C", "A", "C", "A", "C", "E", "B", "D", "E", "C", "C", "A", "C", "A", "D", "D", "D", "D", "C", "D", "D", "B"],
+    },
 }
